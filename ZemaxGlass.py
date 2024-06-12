@@ -375,10 +375,10 @@ class ZemaxGlassLibrary(object):
         ## Zemax's dispersion formulas all use wavelengths in um. So, to compare "ld" with wavemin and wavemax, we need
         ## to multiply by 1000.
         if (amin(self.waves) < ld[0] * 1000.0):
-            print('Truncating fitting range since wavemin=%fum, but ld[0]=%fum ...' % (amin(self.waves)/1000.0, ld[0]))
+            print(f'{glass}: truncating fitting range since wavemin={amin(self.waves)/1000.0:.3f}um, but ld[0]={ld[0]:.3f}um ...')
             indices[self.waves < ld[0] * 1000.0] = NaN
         if (amax(self.waves) > ld[1] * 1000.0):
-            print('Truncating fitting range since wavemax=%fum, but ld[1]=%fum ...' % (amax(self.waves)/1000.0, ld[1]))
+            print(f'{glass}: truncating fitting range since wavemin={amin(self.waves)/1000.0:.3f}um, but ld[0]={ld[1]:.3f}um ...')
             indices[self.waves > ld[1] * 1000.0] = NaN
 
         ## Insert result back into the glass data. Do *not* do this if you want to be able to plot the temperature
@@ -1022,7 +1022,7 @@ if (__name__ == '__main__'):
     print(glasslib.catalogs)
     # glasslib.plot_catalog_property_diagram('all', prop1='vd', prop2='nd')
     # glasslib.plot_catalog_property_diagram('all', prop1='nd', prop2='dispform')
-    glasslib.plot_catalog_property_diagram('schott', prop1='n0', prop2='n1')
+    zglasslib.plot_catalog_property_diagram('schott', prop1='n0', prop2='n1')
     # glasslib.plot_catalog_property_diagram('all', prop1='n0', prop2='n1')
     #glasslib.plot_catalog_property_diagram('cdgm', prop1='vd', prop2='nd')
 
