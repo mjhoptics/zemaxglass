@@ -113,7 +113,7 @@ class ZemaxGlassLibrary(object):
                     nglasses += 1
             return(nglasses)
         elif (name == 'catalogs'):
-            catalogs = self.library.keys()
+            catalogs = list(self.library.keys())
             return(catalogs)
         elif (name == 'glasses'):
             glasses = []
@@ -262,12 +262,11 @@ class ZemaxGlassLibrary(object):
             A numpy array giving the sampled refractive index curve.
         '''
 
-        if ('indices' in self.library[catalog][glass]):
-            return(self.waves, self.library[catalog][glass]['indices'])
+        if catalog not in self.library:
+            raise ValueError(f'The glass catalog "{catalog}" is not inside the glass library.')
 
-        if (catalog == None):
-            print('Warning: cannot find glass "' + glass + '" in the library! Aborting ...')
-            return(None, None)
+        ## If the glass model already includes a full set of wave-index pairs, then there is no need to fit
+        ## from the model -- we need only return the current data.
         if ('waves' in self.library[catalog][glass]) and ('indices' in self.library[catalog][glass]):
             return(self.waves, self.library[catalog][glass]['indices'])
 
@@ -1007,10 +1006,10 @@ if (__name__ == '__main__'):
     glasslib = ZemaxGlassLibrary(catalog='schott', wavemin=400.0, wavemax=700.0, nwaves=100)
 
     print('Number of glasses found in the library: ' + str(glasslib.nglasses))
-    print('Glass catalogs found:')
-    print(glasslib.catalogs)
-    print('Glass names found:')
-    print(glasslib.glasses)
+    print('Glass catalogs found:' + repr(glasslib.catalogs))
+    print('Glass names found:' + repr(glasslib.glasses))
+    glasslib.plot_catalog_property_diagram('infrared', prop1='n0', prop2='n1')
+    plt.show()
 
     ## Demonstrate the ability to plot dispersion curves for any glass.
     glasslib.plot_dispersion('N-BK7', 'schott')
@@ -1026,15 +1025,14 @@ if (__name__ == '__main__'):
     print('Number of glasses found in the library: ' + str(glasslib.nglasses))
     print('Glass catalogs found:')
     print(glasslib.catalogs)
-    # glasslib.plot_catalog_property_diagram('all', prop1='vd', prop2='nd')
-    # glasslib.plot_catalog_property_diagram('all', prop1='nd', prop2='dispform')
-    zglasslib.plot_catalog_property_diagram('schott', prop1='n0', prop2='n1')
-    # glasslib.plot_catalog_property_diagram('all', prop1='n0', prop2='n1')
+    #glasslib.plot_catalog_property_diagram('all', prop1='vd', prop2='nd')
+    #glasslib.plot_catalog_property_diagram('all', prop1='nd', prop2='dispform')
+    #glasslib.plot_catalog_property_diagram('schott', prop1='n0', prop2='n1')
     #glasslib.plot_catalog_property_diagram('cdgm', prop1='vd', prop2='nd')
 
     ## Demonstrate how to pretty-print glass data.
-    # glasslib.pprint('schott')          ## print all the glass info found in the Schott glass catalog
-    # glasslib.pprint()                  ## print all of the glass info for the entire library of glasses
+    #glasslib.pprint('schott')          ## print all the glass info found in the Schott glass catalog
+    #glasslib.pprint()                  ## print all of the glass info for the entire library of glasses
     glasslib.pprint('schott','SF66')   ## print the info for SF66 glass in the Schott glass catalog
 
     ## Now show something in the infrared.
