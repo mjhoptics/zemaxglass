@@ -409,6 +409,9 @@ class ZemaxGlassLibrary(object):
         ## Generate a vector of wavelengths in nm, with samples every 1 nm.
         (waves, indices) = self.get_dispersion(glass, catalog)
 
+        if indices is None:
+            return(waves, ones_like(waves) * NaN)
+
         okay = (indices > 0.0)
         if not any(okay):
             return(waves, ones_like(waves) * NaN)
@@ -634,7 +637,10 @@ class ZemaxGlassLibrary(object):
                     idx = int(prop1[1])
                     if ('interp_coeffs' not in self.library[cat][glass]):
                         #print('Calculating dispersion coefficients for "' + glass + '" ...')
-                        self.get_polyfit_dispersion(glass, cat)
+                        (_,refractive_indices) = self.get_polyfit_dispersion(glass, cat)
+                        if any(isnan(refractive_indices)):
+                            continue
+
                         self.library[cat][glass][prop1] = self.library[cat][glass]['interp_coeffs'][j]
                         #print(glass, self.library[cat][glass]['interp_coeffs'])
                         p2_coeffs = self.library[cat][glass]['interp_coeffs'][j]
