@@ -375,10 +375,10 @@ class ZemaxGlassLibrary(object):
         ## to multiply by 1000.
         if (amin(self.waves) < ld[0] * 1000.0):
             print(f'{glass}: truncating fitting range since wavemin={amin(self.waves)/1000.0:.3f}um, but ld[0]={ld[0]:.3f}um ...')
-            indices[self.waves < ld[0] * 1000.0] = NaN
+            indices[self.waves < ld[0] * 1000.0] = nan
         if (amax(self.waves) > ld[1] * 1000.0):
             print(f'{glass}: truncating fitting range since wavemin={amin(self.waves)/1000.0:.3f}um, but ld[0]={ld[1]:.3f}um ...')
-            indices[self.waves > ld[1] * 1000.0] = NaN
+            indices[self.waves > ld[1] * 1000.0] = nan
 
         ## Insert result back into the glass data. Do *not* do this if you want to be able to plot the temperature
         ## dependence of the refractive index.
@@ -409,11 +409,11 @@ class ZemaxGlassLibrary(object):
         (waves, indices) = self.get_dispersion(glass, catalog)
 
         if indices is None:
-            return(waves, ones_like(waves) * NaN)
+            return(waves, ones_like(waves) * nan)
 
         okay = (indices > 0.0)
         if not any(okay):
-            return(waves, ones_like(waves) * NaN)
+            return(waves, ones_like(waves) * nan)
 
         x = linspace(-1.0, 1.0, len(waves[okay]))
         coeffs = polyfit(x, indices[okay], self.degree)
@@ -830,7 +830,7 @@ def parse_glass_file(filename):
             if len(it_row) > 2:
                 glass_catalog[glassname]['IT']['thickness'] = it_row[2]
             else:
-                glass_catalog[glassname]['IT']['thickness'] = NaN
+                glass_catalog[glassname]['IT']['thickness'] = nan
 
     f.close()
 
@@ -864,7 +864,7 @@ def string_list_to_float_list(x):
             try:
                 res.append(float(a))
             except:
-                res.append(NaN)
+                res.append(nan)
 
     return(res)
 
