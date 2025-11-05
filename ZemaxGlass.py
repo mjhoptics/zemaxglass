@@ -727,14 +727,17 @@ def parse_glass_file(filename):
             it = line.split()[1:]
             it_row = [float(a) for a in it]
             if ('it' not in glass_catalog[glassname]):
-                glass_catalog[glassname]['IT'] = {}
-            glass_catalog[glassname]['IT']['wavelength'] = it_row[0]
-            glass_catalog[glassname]['IT']['transmission'] = it_row[1]
+                glass_catalog[glassname]['it'] = {}
+                glass_catalog[glassname]['it']['wavelength'] = []
+                glass_catalog[glassname]['it']['transmission'] = []
+                glass_catalog[glassname]['it']['thickness'] = []
+            glass_catalog[glassname]['it']['wavelength'].append(it_row[0])
+            glass_catalog[glassname]['it']['transmission'].append(it_row[1])
 
             if len(it_row) > 2:
-                glass_catalog[glassname]['IT']['thickness'] = it_row[2]
+                glass_catalog[glassname]['it']['thickness'].append(it_row[2])
             else:
-                glass_catalog[glassname]['IT']['thickness'] = nan
+                glass_catalog[glassname]['it']['thickness'].append(nan)
 
     f.close()
 
