@@ -69,7 +69,6 @@ class ZemaxGlassLibrary(object):
         degree : int, optional
             The polynomial degree to use for fitting the dispersion spectrum.
         '''
-
         self.debug = debug
         self.degree = degree                    ## the degree of polynomial to use when fitting dispersion data
         #self.basis = basis                     ## the type of basis to use for polynomial fitting ('Taylor','Legendre')
@@ -275,23 +274,6 @@ class ZemaxGlassLibrary(object):
         if P is None:
             P = self.pressure_ref
 
-        if (glass.upper() in ('AIR','VACUUM')):
-            cd = None
-            ld = array((amin(self.waves), amax(self.waves))) / 1000.0
-            dispform = 0
-        else:
-            cd = self.library[catalog][glass]['cd']
-            dispform = self.library[catalog][glass]['dispform']
-            ld = self.library[catalog][glass]['ld']
-
-        ## Zemax's dispersion formulas all use wavelengths in um. So, to compare "ld"
-        ## and wavemin,wavemax we first convert the former to nm and then, when done
-        ## we convert to um.
-        if (amax(self.waves) < ld[0] * 1000.0) or (amin(self.waves) > ld[1] * 1000.0):
-            print('wavemin,wavemax=(%f,%f), but ld=(%f,%f)' % (amin(self.waves), amax(self.waves), ld[0], ld[1]))
-            print('Cannot calculate an index in the required spectral range. Aborting ...')
-            return(None, None)
-
         ## Choose which domain is the one in which we sample uniformly. Regardless
         ## of choice, the returned vector "w" gives wavelength in um.
         if (self.sampling_domain == 'wavelength'):
@@ -299,92 +281,14 @@ class ZemaxGlassLibrary(object):
         elif (self.sampling_domain == 'wavenumber'):
             w = self.wavenumbers
 
-        if ('td' in self.library[catalog][glass]):
-            td = self.library[catalog][glass]['td']
-            T_ref = td[6]       ## the dispersion measurement reference temperature in degC
-        else:
-            td = zeros(6)
-            T_ref = 0.0        ## the dispersion measurement reference temperature in degC
+        if catalog not in self.library:
+            raise ValueError(f'The glass catalog "{catalog}" is not inside the glass library.')
+        
+        glass_rec = self.library[catalog][glass]
+        indices = get_dispersion(glass, catalog, glass_rec, w, T, P)
+        wvls = array([1000*wl for wl in w])
 
-        ## Calculating the index of air is a special case, for which we can give a fixed formula.
-        if (glass.upper() == 'AIR'):
-            T_ref = 20.0
-            P_ref = self.pressure_ref   ## the dispersion measurement reference pressure in Pascals
-            n_ref = 1.0 + ((6432.8 + ((2949810.0 * w**2) / (146.0 * w**2 - 1.0)) + ((25540.0 * w**2) / (41.0 * w**2 - 1.0))) * 1.0e-8)
-            indices = 1.0 + ((n_ref - 1.0) / (1.0 + (T_ref - 15.0) * 3.4785e-3)) * (P / P_ref)
-        if (glass.upper() == 'VACUUM'):
-            indices = ones_like(w)
-
-        if (dispform == 0):
-            ## use this for AIR and VACUUM
-            pass
-        elif (dispform == 1):
-            formula_rhs = cd[0] + (cd[1] * w**2) + (cd[2] * w**-2) + (cd[3] * w**-4) + (cd[4] * w**-6) + (cd[5] * w**-8)
-            indices = sqrt(formula_rhs)
-        elif (dispform == 2):  ## Sellmeier1
-            formula_rhs = (cd[0] * w**2 / (w**2 - cd[1])) + (cd[2] * w**2 / (w**2 - cd[3])) + (cd[4] * w**2 / (w**2 - cd[5]))
-            indices = sqrt(formula_rhs + 1.0)
-        elif (dispform == 3):  ## Herzberger
-            L = 1.0 / (w**2 - 0.028)
-            indices = cd[0] + (cd[1] * L) + (cd[2] * L**2) + (cd[3] * w**2) + (cd[4] * w**4) + (cd[5] * w**6)
-        elif (dispform == 4):  ## Sellmeier2
-            formula_rhs = cd[0] + (cd[1] * w**2 / (w**2 - (cd[2])**2)) + (cd[3] / (w**2 - (cd[4])**2))
-            indices = sqrt(formula_rhs + 1.0)
-        elif (dispform == 5):  ## Conrady
-            indices = cd[0] + (cd[1] / w) + (cd[2] / w**3.5)
-        elif (dispform == 6):  ## Sellmeier3
-            formula_rhs = (cd[0] * w**2 / (w**2 - cd[1])) + (cd[2] * w**2 / (w**2 - cd[3])) + \
-                          (cd[4] * w**2 / (w**2 - cd[5])) + (cd[6] * w**2 / (w**2 - cd[7]))
-            indices = sqrt(formula_rhs + 1.0)
-        elif (dispform == 7):  ## HandbookOfOptics1
-            formula_rhs = cd[0] + (cd[1] / (w**2 - cd[2])) - (cd[3] * w**2)
-            indices = sqrt(formula_rhs)
-        elif (dispform == 8):  ## HandbookOfOptics2
-            formula_rhs = cd[0] + (cd[1] * w**2 / (w**2 - cd[2])) - (cd[3] * w**2)
-            indices = sqrt(formula_rhs)
-        elif (dispform == 9):  ## Sellmeier4
-            formula_rhs = cd[0] + (cd[1] * w**2 / (w**2 - cd[2])) + (cd[3] * w**2 / (w**2 - cd[4]))
-            indices = sqrt(formula_rhs)
-        elif (dispform == 10):  ## Extended1
-            formula_rhs = cd[0] + (cd[1] * w**2) + (cd[2] * w**-2) + (cd[3] * w**-4) + (cd[4] * w**-6) + \
-                          (cd[5] * w**-8) + (cd[6] * w**-10) + (cd[7] * w**-12)
-            indices = sqrt(formula_rhs)
-        elif (dispform == 11):  ## Sellmeier5
-            formula_rhs = (cd[0] * w**2 / (w**2 - cd[1])) + (cd[2] * w**2 / (w**2 - cd[3])) + \
-                          (cd[4] * w**2 / (w**2 - cd[5])) + (cd[6] * w**2 / (w**2 - cd[7])) + \
-                          (cd[8] * w**2 / (w**2 - cd[9]))
-            indices = sqrt(formula_rhs + 1.0)
-        elif (dispform == 12):  ## Extended2
-            formula_rhs = cd[0] + (cd[1] * w**2) + (cd[2] * w**-2) + (cd[3] * w**-4) + (cd[4] * w**-6) + \
-                          (cd[5] * w**-8) + (cd[6] * w**4) + (cd[7] * w**6)
-            indices = sqrt(formula_rhs)
-        else:
-            raise ValueError('Dispersion formula #' + str(dispform) + ' (for glass=' + glass + ' in catalog=' + catalog + ') is not a valid choice.')
-
-        ## If 'TD' is included in the glass data, then include pressure and temperature dependence of the lens
-        ## environment. From Schott's technical report "TIE-19: Temperature Coefficient of the Refractive Index".
-        ## The above "indices" data are assumed to be from the reference temperature T_ref. Now we add a small change
-        ## delta_n to it due to a change in temperature.
-        if ('td' in self.library[catalog][glass]):
-            td = self.library[catalog][glass]['td']
-            dT = T - T_ref
-            dn = ((indices**2 - 1.0) / (2.0 * indices)) * (td[0] * dT + td[1] * dT**2 + td[2] * dT**3 + ((td[3] * dT + td[4] * dT**2) / (w**2 - td[5]**2)))
-            indices = indices + dn
-
-        ## Zemax's dispersion formulas all use wavelengths in um. So, to compare "ld" with wavemin and wavemax, we need
-        ## to multiply by 1000.
-        if (amin(self.waves) < ld[0] * 1000.0):
-            print(f'{glass}: truncating fitting range since wavemin={amin(self.waves)/1000.0:.3f}um, but ld[0]={ld[0]:.3f}um ...')
-            indices[self.waves < ld[0] * 1000.0] = NaN
-        if (amax(self.waves) > ld[1] * 1000.0):
-            print(f'{glass}: truncating fitting range since wavemin={amin(self.waves)/1000.0:.3f}um, but ld[0]={ld[1]:.3f}um ...')
-            indices[self.waves > ld[1] * 1000.0] = NaN
-
-        ## Insert result back into the glass data. Do *not* do this if you want to be able to plot the temperature
-        ## dependence of the refractive index.
-        #self.library[catalog][glass]['indices'] = indices
-
-        return(self.waves, indices)
+        return (wvls, indices)
 
     ## =========================
     def get_polyfit_dispersion(self, glass, catalog):
@@ -409,11 +313,11 @@ class ZemaxGlassLibrary(object):
         (waves, indices) = self.get_dispersion(glass, catalog)
 
         if indices is None:
-            return(waves, ones_like(waves) * NaN)
+            return(waves, ones_like(waves) * nan)
 
         okay = (indices > 0.0)
         if not any(okay):
-            return(waves, ones_like(waves) * NaN)
+            return(waves, ones_like(waves) * nan)
 
         x = linspace(-1.0, 1.0, len(waves[okay]))
         coeffs = polyfit(x, indices[okay], self.degree)
@@ -823,18 +727,155 @@ def parse_glass_file(filename):
             it = line.split()[1:]
             it_row = [float(a) for a in it]
             if ('it' not in glass_catalog[glassname]):
-                glass_catalog[glassname]['IT'] = {}
-            glass_catalog[glassname]['IT']['wavelength'] = it_row[0]
-            glass_catalog[glassname]['IT']['transmission'] = it_row[1]
+                glass_catalog[glassname]['it'] = {}
+                glass_catalog[glassname]['it']['wavelength'] = []
+                glass_catalog[glassname]['it']['transmission'] = []
+                glass_catalog[glassname]['it']['thickness'] = []
+            glass_catalog[glassname]['it']['wavelength'].append(it_row[0])
+            glass_catalog[glassname]['it']['transmission'].append(it_row[1])
 
             if len(it_row) > 2:
-                glass_catalog[glassname]['IT']['thickness'] = it_row[2]
+                glass_catalog[glassname]['it']['thickness'].append(it_row[2])
             else:
-                glass_catalog[glassname]['IT']['thickness'] = NaN
+                glass_catalog[glassname]['it']['thickness'].append(nan)
 
     f.close()
 
     return(glass_catalog)
+
+## =========================
+def get_dispersion(glass, catalog, glass_rec, w, T=20.0, P=1.0113e5):
+    '''
+    For a given glass, calculate the dispersion curve (refractive index as a 
+    function of wavelength in nm).
+
+    Note that we need to know both the catalog and the glass name, and not just 
+    the glass name, because some catalogs share the same glass names.
+
+    If the lens thermal data is included, then thermal variation of the index 
+    is incorporated into the output.
+
+    Parameters
+    ----------
+    glass: str
+        The name of the glass we want to know about.
+    catalog : str
+        The catalog containing the glass.
+    glass_rec: dict
+        contains the contents of the agf file mapped to a dict
+    w: ndarray
+        wavelengths in um (Zemax convention)
+    T : float
+        The temperature of the lens environment, in degC.
+    P : float
+        The pressure of the lens environment in Pascals, e.g. air at normal conditions. For vacuum set this value to zero.
+
+    Returns
+    -------
+    indices : ndarray
+        A numpy array giving the sampled refractive index curve.
+    '''
+
+    if (glass.upper() in ('AIR','VACUUM')):
+        cd = []
+        ld = array((amin(w), amax(w))) / 1000.0
+        dispform = 0
+    else:
+        cd = glass_rec['cd']
+        dispform = glass_rec['dispform']
+        ld = glass_rec['ld']
+
+    if (amax(w) < ld[0]) or (amin(w) > ld[1]):
+        print('wavemin,wavemax=(%f,%f), but ld=(%f,%f)' % (amin(w), amax(w), ld[0], ld[1]))
+        print('Cannot calculate an index in the required spectral range. Aborting ...')
+        return  None
+
+    if ('td' in glass_rec):
+        td = glass_rec['td']
+        T_ref = td[6]       ## the dispersion measurement reference temperature in degC
+    else:
+        td = zeros(6)
+        T_ref = 0.0        ## the dispersion measurement reference temperature in degC
+
+    ## Calculating the index of air is a special case, for which we can give a fixed formula.
+    if (glass.upper() == 'AIR'):
+        T_ref = 20.0
+        P_ref = 1.0113e5   ## the dispersion measurement reference pressure in Pascals
+        n_ref = 1.0 + ((6432.8 + ((2949810.0 * w**2) / (146.0 * w**2 - 1.0)) + ((25540.0 * w**2) / (41.0 * w**2 - 1.0))) * 1.0e-8)
+        indices = 1.0 + ((n_ref - 1.0) / (1.0 + (T_ref - 15.0) * 3.4785e-3)) * (P / P_ref)
+    if (glass.upper() == 'VACUUM'):
+        indices = ones_like(w)
+
+    if (dispform == 0):
+        ## use this for AIR and VACUUM
+        pass
+    elif (dispform == 1):
+        formula_rhs = cd[0] + (cd[1] * w**2) + (cd[2] * w**-2) + (cd[3] * w**-4) + (cd[4] * w**-6) + (cd[5] * w**-8)
+        indices = sqrt(formula_rhs)
+    elif (dispform == 2):  ## Sellmeier1
+        formula_rhs = (cd[0] * w**2 / (w**2 - cd[1])) + (cd[2] * w**2 / (w**2 - cd[3])) + (cd[4] * w**2 / (w**2 - cd[5]))
+        indices = sqrt(formula_rhs + 1.0)
+    elif (dispform == 3):  ## Herzberger
+        L = 1.0 / (w**2 - 0.028)
+        indices = cd[0] + (cd[1] * L) + (cd[2] * L**2) + (cd[3] * w**2) + (cd[4] * w**4) + (cd[5] * w**6)
+    elif (dispform == 4):  ## Sellmeier2
+        formula_rhs = cd[0] + (cd[1] * w**2 / (w**2 - (cd[2])**2)) + (cd[3] / (w**2 - (cd[4])**2))
+        indices = sqrt(formula_rhs + 1.0)
+    elif (dispform == 5):  ## Conrady
+        indices = cd[0] + (cd[1] / w) + (cd[2] / w**3.5)
+    elif (dispform == 6):  ## Sellmeier3
+        formula_rhs = (cd[0] * w**2 / (w**2 - cd[1])) + (cd[2] * w**2 / (w**2 - cd[3])) + \
+                        (cd[4] * w**2 / (w**2 - cd[5])) + (cd[6] * w**2 / (w**2 - cd[7]))
+        indices = sqrt(formula_rhs + 1.0)
+    elif (dispform == 7):  ## HandbookOfOptics1
+        formula_rhs = cd[0] + (cd[1] / (w**2 - cd[2])) - (cd[3] * w**2)
+        indices = sqrt(formula_rhs)
+    elif (dispform == 8):  ## HandbookOfOptics2
+        formula_rhs = cd[0] + (cd[1] * w**2 / (w**2 - cd[2])) - (cd[3] * w**2)
+        indices = sqrt(formula_rhs)
+    elif (dispform == 9):  ## Sellmeier4
+        formula_rhs = cd[0] + (cd[1] * w**2 / (w**2 - cd[2])) + (cd[3] * w**2 / (w**2 - cd[4]))
+        indices = sqrt(formula_rhs)
+    elif (dispform == 10):  ## Extended1
+        formula_rhs = cd[0] + (cd[1] * w**2) + (cd[2] * w**-2) + (cd[3] * w**-4) + (cd[4] * w**-6) + \
+                        (cd[5] * w**-8) + (cd[6] * w**-10) + (cd[7] * w**-12)
+        indices = sqrt(formula_rhs)
+    elif (dispform == 11):  ## Sellmeier5
+        formula_rhs = (cd[0] * w**2 / (w**2 - cd[1])) + (cd[2] * w**2 / (w**2 - cd[3])) + \
+                        (cd[4] * w**2 / (w**2 - cd[5])) + (cd[6] * w**2 / (w**2 - cd[7])) + \
+                        (cd[8] * w**2 / (w**2 - cd[9]))
+        indices = sqrt(formula_rhs + 1.0)
+    elif (dispform == 12):  ## Extended2
+        formula_rhs = cd[0] + (cd[1] * w**2) + (cd[2] * w**-2) + (cd[3] * w**-4) + (cd[4] * w**-6) + \
+                        (cd[5] * w**-8) + (cd[6] * w**4) + (cd[7] * w**6)
+        indices = sqrt(formula_rhs)
+    else:
+        raise ValueError('Dispersion formula #' + str(dispform) + ' (for glass=' + glass + ' in catalog=' + catalog + ') is not a valid choice.')
+
+    ## If 'TD' is included in the glass data, then include pressure and temperature dependence of the lens
+    ## environment. From Schott's technical report "TIE-19: Temperature Coefficient of the Refractive Index".
+    ## The above "indices" data are assumed to be from the reference temperature T_ref. Now we add a small change
+    ## delta_n to it due to a change in temperature.
+    if ('td' in glass_rec):
+        td = glass_rec['td']
+        dT = T - T_ref
+        dn = ((indices**2 - 1.0) / (2.0 * indices)) * (td[0] * dT + td[1] * dT**2 + td[2] * dT**3 + ((td[3] * dT + td[4] * dT**2) / (w**2 - td[5]**2)))
+        indices = indices + dn
+
+    ## Zemax's dispersion formulas all use wavelengths in um. So, to compare "ld" with wavemin and wavemax, we need
+    ## to multiply by 1000.
+    if (amin(w) < ld[0]):
+        print(f'{glass}: truncating fitting range since wavemin={amin(w):.3f}um, but ld[0]={ld[0]:.3f}um ...')
+        indices[w < ld[0]] = nan
+    if (amax(w) > ld[1] * 1000.0):
+        print(f'{glass}: truncating fitting range since wavemin={amin(w):.3f}um, but ld[0]={ld[1]:.3f}um ...')
+        indices[w > ld[1]] = nan
+
+    ## Insert result back into the glass data. Do *not* do this if you want to be able to plot the temperature
+    ## dependence of the refractive index.
+    #glass_rec['indices'] = indices
+
+    return indices
 
 ## =================================================================================================
 def string_list_to_float_list(x):
@@ -864,7 +905,7 @@ def string_list_to_float_list(x):
             try:
                 res.append(float(a))
             except:
-                res.append(NaN)
+                res.append(nan)
 
     return(res)
 
