@@ -678,11 +678,21 @@ def parse_glass_file(filename):
     glass_catalog : dict
         The dictionary containing glass data for all classes in the file.
     '''
-
-    f = open(filename, 'r', encoding='latin1')
     glass_catalog = {}
+    encodings = ['utf-16', 'utf-8', 'utf-8-sig', 'iso-8859-1', 'latin1']
 
-    for line in f:
+    for decode in encodings:
+        try:
+            with open(filename, 'r', encoding=decode) as file:
+                inpt = file.read()
+        except UnicodeError:
+            pass
+        else:
+            break
+
+    # print(f"{filename.split('/')[-1]:17s}   encoding: {decode}")
+
+    for line in inpt.splitlines():
         if not line.strip(): continue
         if line.startswith('CC '): continue
         if line.startswith('NM '):
@@ -739,9 +749,7 @@ def parse_glass_file(filename):
             else:
                 glass_catalog[glassname]['it']['thickness'].append(nan)
 
-    f.close()
-
-    return(glass_catalog)
+    return glass_catalog
 
 ## =========================
 def get_dispersion(glass, catalog, glass_rec, w, T=20.0, P=1.0113e5):
