@@ -691,6 +691,13 @@ def parse_glass_file(filename):
             break
 
     # print(f"{filename.split('/')[-1]:17s}   encoding: {decode}")
+    return parse_glass_input(inpt)
+
+
+## =============================================================================
+def parse_glass_input(inpt):
+
+    glass_catalog = {}
 
     for line in inpt.splitlines():
         if not line.strip(): continue
