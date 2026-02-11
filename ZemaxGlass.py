@@ -857,6 +857,10 @@ def get_dispersion(glass, catalog, glass_rec, w, T=20.0, P=1.0113e5):
         formula_rhs = cd[0] + (cd[1] * w**2) + (cd[2] * w**-2) + (cd[3] * w**-4) + (cd[4] * w**-6) + \
                         (cd[5] * w**-8) + (cd[6] * w**4) + (cd[7] * w**6)
         indices = sqrt(formula_rhs)
+    elif (dispform == 13):  ## Hikari
+        formula_rhs = cd[0] + (cd[1] * w**2) + (cd[2] * w**4) + (cd[3] * w**-2) + (cd[4] * w**-4) + \
+                        (cd[5] * w**-6) + (cd[6] * w**-8) + (cd[7] * w**-10) + (cd[8] * w**-12)
+        indices = sqrt(formula_rhs)
     else:
         raise ValueError('Dispersion formula #' + str(dispform) + ' (for glass=' + glass + ' in catalog=' + catalog + ') is not a valid choice.')
 
