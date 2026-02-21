@@ -283,7 +283,7 @@ class ZemaxGlassLibrary(object):
 
         if catalog not in self.library:
             raise ValueError(f'The glass catalog "{catalog}" is not inside the glass library.')
-        
+
         glass_rec = self.library[catalog][glass]
         indices = get_dispersion(glass, catalog, glass_rec, w, T, P)
         wvls = array([1000*wl for wl in w])
@@ -522,7 +522,7 @@ class ZemaxGlassLibrary(object):
         all_p1 = []
         all_p2 = []
 
-        fig = plt.figure(figsize=(12,6))
+        fig = plt.figure(figsize=(8,4))
         ax = plt.gca()
         ax.set_prop_cycle(cycler('color', colors))
 
@@ -678,28 +678,29 @@ def parse_glass_file(filename):
     glass_catalog : dict
         The dictionary containing glass data for all classes in the file.
     '''
+
     glass_catalog = {}
     encodings = ['utf-16', 'utf-8', 'utf-8-sig', 'iso-8859-1', 'latin1']
 
     for decode in encodings:
         try:
             with open(filename, 'r', encoding=decode) as file:
-                inpt = file.read()
+                input_str = file.read()
         except UnicodeError:
             pass
         else:
             break
 
     # print(f"{filename.split('/')[-1]:17s}   encoding: {decode}")
-    return parse_glass_input(inpt)
+    return parse_glass_input(input_str)
 
 
 ## =============================================================================
-def parse_glass_input(inpt):
+def parse_glass_input(input_str):
 
     glass_catalog = {}
 
-    for line in inpt.splitlines():
+    for line in input_str.splitlines():
         if not line.strip(): continue
         if line.startswith('CC '): continue
         if line.startswith('NM '):
@@ -756,18 +757,18 @@ def parse_glass_input(inpt):
             else:
                 glass_catalog[glassname]['it']['thickness'].append(nan)
 
-    return glass_catalog
+    return(glass_catalog)
 
 ## =========================
 def get_dispersion(glass, catalog, glass_rec, w, T=20.0, P=1.0113e5):
     '''
-    For a given glass, calculate the dispersion curve (refractive index as a 
+    For a given glass, calculate the dispersion curve (refractive index as a
     function of wavelength in nm).
 
-    Note that we need to know both the catalog and the glass name, and not just 
+    Note that we need to know both the catalog and the glass name, and not just
     the glass name, because some catalogs share the same glass names.
 
-    If the lens thermal data is included, then thermal variation of the index 
+    If the lens thermal data is included, then thermal variation of the index
     is incorporated into the output.
 
     Parameters
@@ -1068,8 +1069,7 @@ if (__name__ == '__main__'):
     print('Number of glasses found in the library: ' + str(glasslib.nglasses))
     print('Glass catalogs found:' + repr(glasslib.catalogs))
     print('Glass names found:' + repr(glasslib.glasses))
-    glasslib.plot_catalog_property_diagram('infrared', prop1='n0', prop2='n1')
-    plt.show()
+    glasslib.plot_catalog_property_diagram('schott', prop1='n0', prop2='n1')
 
     ## Demonstrate the ability to plot dispersion curves for any glass.
     glasslib.plot_dispersion('N-BK7', 'schott')
