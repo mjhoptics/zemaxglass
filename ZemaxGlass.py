@@ -678,11 +678,28 @@ def parse_glass_file(filename):
     glass_catalog : dict
         The dictionary containing glass data for all classes in the file.
     '''
+    glass_catalog = {}
+    encodings = ['utf-16', 'utf-8', 'utf-8-sig', 'iso-8859-1', 'latin1']
 
-    f = open(filename, 'r', encoding='latin1')
+    for decode in encodings:
+        try:
+            with open(filename, 'r', encoding=decode) as file:
+                inpt = file.read()
+        except UnicodeError:
+            pass
+        else:
+            break
+
+    # print(f"{filename.split('/')[-1]:17s}   encoding: {decode}")
+    return parse_glass_input(inpt)
+
+
+## =============================================================================
+def parse_glass_input(inpt):
+
     glass_catalog = {}
 
-    for line in f:
+    for line in inpt.splitlines():
         if not line.strip(): continue
         if line.startswith('CC '): continue
         if line.startswith('NM '):
@@ -739,9 +756,7 @@ def parse_glass_file(filename):
             else:
                 glass_catalog[glassname]['it']['thickness'].append(nan)
 
-    f.close()
-
-    return(glass_catalog)
+    return glass_catalog
 
 ## =========================
 def get_dispersion(glass, catalog, glass_rec, w, T=20.0, P=1.0113e5):
@@ -848,6 +863,10 @@ def get_dispersion(glass, catalog, glass_rec, w, T=20.0, P=1.0113e5):
     elif (dispform == 12):  ## Extended2
         formula_rhs = cd[0] + (cd[1] * w**2) + (cd[2] * w**-2) + (cd[3] * w**-4) + (cd[4] * w**-6) + \
                         (cd[5] * w**-8) + (cd[6] * w**4) + (cd[7] * w**6)
+        indices = sqrt(formula_rhs)
+    elif (dispform == 13):  ## Hikari
+        formula_rhs = cd[0] + (cd[1] * w**2) + (cd[2] * w**4) + (cd[3] * w**-2) + (cd[4] * w**-4) + \
+                        (cd[5] * w**-6) + (cd[6] * w**-8) + (cd[7] * w**-10) + (cd[8] * w**-12)
         indices = sqrt(formula_rhs)
     else:
         raise ValueError('Dispersion formula #' + str(dispform) + ' (for glass=' + glass + ' in catalog=' + catalog + ') is not a valid choice.')
