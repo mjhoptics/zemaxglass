@@ -550,12 +550,12 @@ class ZemaxGlassLibrary(object):
                     if ('interp_coeffs' in self.library[cat][glass]):
                         p1_coeffs = self.library[cat][glass]['interp_coeffs'][idx]
                         self.library[cat][glass][prop1] = self.library[cat][glass]['interp_coeffs'][j]
-                        p2_coeffs = self.library[cat][glass]['interp_coeffs'][j]
+                        p1_coeffs = self.library[cat][glass]['interp_coeffs'][j]
                     else:
                         print('Could not find valid interpolation coefficients for "' + glass + '" glass ...')
                         continue
                 else:
-                    p2_coeffs = self.library[cat][glass]['interp_coeffs'][j]
+                    p1.append(self.library[cat][glass][prop1])
 
                 if (prop2 in ('n0','n1','n2','n3','n4','n5','n6','n6','n8','n9')):
                     idx = int(prop2[1])
@@ -569,7 +569,7 @@ class ZemaxGlassLibrary(object):
                         print('Could not find valid interpolation coefficients for "' + glass + '" glass ...')
                         continue
                 else:
-                    p2_coeffs = self.library[cat][glass]['interp_coeffs'][j]
+                    p2.append(self.library[cat][glass][prop2])
 
                 glassnames.append(glass)
 
@@ -1070,10 +1070,13 @@ if (__name__ == '__main__'):
     print('Glass catalogs found:' + repr(glasslib.catalogs))
     print('Glass names found:' + repr(glasslib.glasses))
     glasslib.plot_catalog_property_diagram('schott', prop1='n0', prop2='n1')
+    glasslib.plot_catalog_property_diagram('schott', prop1='nd', prop2='vd')
 
     ## Demonstrate the ability to plot dispersion curves for any glass.
     glasslib.plot_dispersion('N-BK7', 'schott')
     glasslib.plot_dispersion('SF66', 'schott', polyfit=True, fiterror=True)
+    glasslib.plot_dispersion('N-SK16', 'schott', polyfit=True, fiterror=False)
+    glasslib.plot_dispersion('F2', 'schott', polyfit=True, fiterror=False)
 
     ## Demonstrate the ability to plot the temperature dependence of index.
     temperatures = (0,100,200,300,400)
