@@ -1075,8 +1075,6 @@ if (__name__ == '__main__'):
     ## Demonstrate the ability to plot dispersion curves for any glass.
     glasslib.plot_dispersion('N-BK7', 'schott')
     glasslib.plot_dispersion('SF66', 'schott', polyfit=True, fiterror=True)
-    glasslib.plot_dispersion('N-SK16', 'schott', polyfit=True, fiterror=False)
-    glasslib.plot_dispersion('F2', 'schott', polyfit=True, fiterror=False)
 
     ## Demonstrate the ability to plot the temperature dependence of index.
     temperatures = (0,100,200,300,400)
