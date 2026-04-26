@@ -700,7 +700,14 @@ def parse_glass_input(input_str):
 
     glass_catalog = {}
 
+    input_lines = []
     for line in input_str.splitlines():
+        if line[:2] in ['Re', 'CC', 'NM', 'GC', 'ED', 'CD', 'TD', 'MD', 'OD', 'LD', 'IT', 'BD']:
+            input_lines.append(line)
+        else:  # no label, treat as continuation of previous line
+            input_lines[-1] += line
+
+    for line in input_lines:
         if not line.strip(): continue
         if line.startswith('CC '): continue
         if line.startswith('NM '):
@@ -794,7 +801,7 @@ def get_dispersion(glass, catalog, glass_rec, w, T=20.0, P=1.0113e5):
 
     if (glass.upper() in ('AIR','VACUUM')):
         cd = []
-        ld = array((amin(w), amax(w))) / 1000.0
+        ld = array((amin(w), amax(w)))
         dispform = 0
     else:
         cd = glass_rec['cd']
@@ -803,7 +810,7 @@ def get_dispersion(glass, catalog, glass_rec, w, T=20.0, P=1.0113e5):
 
     if (amax(w) < ld[0]) or (amin(w) > ld[1]):
         print('wavemin,wavemax=(%f,%f), but ld=(%f,%f)' % (amin(w), amax(w), ld[0], ld[1]))
-        print('Cannot calculate an index in the required spectral range. Aborting ...')
+        print(f'Cannot calculate an index for {glass} {catalog} in the required spectral range. Aborting ...')
         return  None
 
     if ('td' in glass_rec):
