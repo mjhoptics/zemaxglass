@@ -6,12 +6,13 @@ build-backend = "setuptools.build_meta"
 name = "ZemaxGlass"
 description = "Zemax glass (.agf) file reader"
 readme = "README.md"
+version = "2.0.0a2"
 
 license = "MIT"
 license-files = ["LICENSE.txt",]
 
 authors = [
-    {name = "Nathan Hagen", email = "nhagen@optics.arizona.edu"},
+    {name = "Nathan Hagen", email = "and.the.light.shattered@gmail.com"},
 ]
 
 classifiers = [ 
@@ -34,7 +35,6 @@ dependencies = [
     "matplotlib>=3.10.8", 
     "cycler>=0.12.1",
 ]
-dynamic = [ "version",]
 
 [project.urls]
 Homepage = "https://github.com/nzhagen/zemaxglass"
